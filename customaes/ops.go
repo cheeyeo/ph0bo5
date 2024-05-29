@@ -13,7 +13,7 @@ import (
 func checkErr(err error) {
 	if err != nil {
 		fmt.Printf("Error is %+v\n", err)
-		log.Fatal("ERROR:", err)
+		log.Fatalf(err.Error())
 	}
 }
 
@@ -42,8 +42,11 @@ func Encrypt(keyByte []byte, plainText string) string {
 	return cipherText
 }
 
-func Decrypt(keyByte []byte, cipherText string) string {
-	cipherTextByte, _ := hex.DecodeString(cipherText)
+func Decrypt(keyByte []byte, cipherText string) (string, error) {
+	cipherTextByte, err := hex.DecodeString(cipherText)
+	if err != nil {
+		return "", err
+	}
 
 	// CHECK cipherTextByte
 	// CBC mode always works in whole blocks.
@@ -66,5 +69,5 @@ func Decrypt(keyByte []byte, cipherText string) string {
 	ctr.XORKeyStream(cipherTextByte, cipherTextByte)
 
 	// RETURN STRING
-	return string(cipherTextByte[:])
+	return string(cipherTextByte[:]), nil
 }

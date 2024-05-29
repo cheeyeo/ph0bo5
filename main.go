@@ -95,8 +95,10 @@ func main() {
 		}
 
 		// Encrypt random key using openssl
-		_ = customkms.EncryptKey(svc, keyId, keyByte, "key.b64.enc")
-
+		err = customkms.EncryptKey(svc, keyId, keyByte, "key.b64.enc")
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 	case "decrypt":
 		decryptCmd.Parse(os.Args[2:])
 		fmt.Println("subcommand 'decrypt'")
@@ -120,7 +122,10 @@ func main() {
 			log.Fatalf(err.Error())
 		}
 
-		plain := customaes.Decrypt(keyByte, string(cipherText))
+		plain, err := customaes.Decrypt(keyByte, string(cipherText))
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 		// Need to base64 decode and then save it
 		decoded, _ := base64.StdEncoding.DecodeString(plain)
 		err = os.WriteFile(*decryptTarget, decoded, 0664)
@@ -130,5 +135,4 @@ func main() {
 
 		log.Printf("File written to %s\n", *decryptTarget)
 	}
-
 }
