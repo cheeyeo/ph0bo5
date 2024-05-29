@@ -54,3 +54,11 @@ cp .env.example .env
 
 source .env
 ```
+
+### TODOS
+
+* Make the name of generated keys to match that of source filenames
+* Remove / delete the decrypted keys after decryption
+* Add option to upload encrypted artifacts to S3
+* Add option to allow traversal via directories and perform encryption/decryption on each file found
+* Add TESTS
