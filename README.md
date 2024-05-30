@@ -4,17 +4,17 @@
 
 Example of building a hybrid offline encryption system based on [AWS Article here].
 
-The idea is to use a RSA KMS key to encrypt and decrypt locally created AES keys. 
+The idea is to create a hybrid system that uses AES to encrypt data locally and using the RSA KMS public key to further encrypt the generated key used in the AES encryption.
 
 The encryption workflow based on the article becomes:
 
 * Create RSA keypair in KMS
 * Create random 32 byte key locally
 * Use random 32 byte key above to encrypt file
+* Get the public RSA key
 * Use public key from RSA KMS keypair to encrypt the random key
 * Save as artifacts the encrypted random key and the encrypted file object
 
-The difference with the article is we don't download the public key but instead call out to KMS API to encrypt the locally generated key...
 
 The decryption process becomes:
 
@@ -34,16 +34,6 @@ go mod tidy
 make build
 ```
 
-The CLI takes the following commands:
-
-```
-encrypt --source <FILE> --target <FILE>
-```
-
-```
-decrypt --source <ENCRYPTED FILE> --target <DECRYPTED FILE>
-```
-
 Create a KMS RSA assymmetric keypair with an alias.
 
 Add your AWS details and key alias to the .env file
@@ -54,6 +44,30 @@ cp .env.example .env
 
 source .env
 ```
+
+We need to download the Public Key from KMS using the following command:
+```
+./build/phobos download-cert --path ./certs/public_key.der
+```
+
+The public key will be returned as a DER-encoded X.509 public key, also known as SubjectPublicKeyInfo (SPKI)
+
+We pass the saved public key during encryption to encrypt the random key:
+```
+./build/phobos encrypt \
+  --cert-der ./certs/public_key.der \
+  --source <FILE> \
+  --target <FILE>
+```
+
+To decrypt the encrypted file and key:
+```
+./build/phobos decrypt \
+  --source <ENCRYPTED FILE> \
+  --target <DECRYPTED FILE>
+```
+
+
 
 ### TODOS
 
