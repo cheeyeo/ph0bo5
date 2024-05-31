@@ -81,3 +81,4 @@ To decrypt the encrypted file and key:
 ### TODOS
 
 * Add more tests
+* Add GH workflow to build and deploy 
