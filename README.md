@@ -80,4 +80,4 @@ To decrypt the encrypted file and key:
 
 ### TODOS
 
-* Add TESTS
+* Add more tests

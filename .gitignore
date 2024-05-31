@@ -26,3 +26,4 @@ go.work.sum
 *.b64
 *.orig
 build/
+certs/
