@@ -5,14 +5,9 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"errors"
 	"fmt"
 )
-
-type InvalidRSAPublicKeyError struct{}
-
-func (e InvalidRSAPublicKeyError) Error() string {
-	return "Invalid RSA Public key"
-}
 
 // Convert AWS KMS PUBLIC KEY to RSA Public Key
 func ConvertDERToRSA(data []byte) (*rsa.PublicKey, error) {
@@ -26,7 +21,7 @@ func ConvertDERToRSA(data []byte) (*rsa.PublicKey, error) {
 		fmt.Println("Public key is of type RSA")
 		return pub, nil
 	default:
-		return nil, InvalidRSAPublicKeyError{}
+		return nil, errors.New("invalid RSA Public key")
 	}
 }
 

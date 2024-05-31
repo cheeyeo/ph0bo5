@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -20,8 +21,7 @@ func checkErr(err error) {
 func GenerateRandomString(n int) string {
 	b := make([]byte, n)
 	_, _ = rand.Read(b)
-	// return base64.RawURLEncoding.EncodeToString(b)
-	return string(b)
+	return base64.StdEncoding.EncodeToString(b)[:n]
 }
 
 func EncryptWithAES(keyByte []byte, plainText string) string {

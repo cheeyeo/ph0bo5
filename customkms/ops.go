@@ -1,7 +1,6 @@
 package customkms
 
 import (
-	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -33,13 +32,11 @@ func EncryptKey(client kmsiface.KMSAPI, keyId string, source []byte, target stri
 	})
 
 	if err != nil {
-		log.Fatalf("Error with encrypting %s %s", source, err)
 		return err
 	}
 
 	err = os.WriteFile(target, result.CiphertextBlob, 0644)
 	if err != nil {
-		log.Fatal(err)
 		return err
 	}
 
@@ -49,7 +46,7 @@ func EncryptKey(client kmsiface.KMSAPI, keyId string, source []byte, target stri
 func DecryptKey(client kmsiface.KMSAPI, keyId string, encrypted string) ([]byte, error) {
 	encFile, err := os.ReadFile(encrypted)
 	if err != nil {
-		return []byte(nil), err
+		return nil, err
 	}
 
 	result, err := client.Decrypt(&kms.DecryptInput{
@@ -57,8 +54,9 @@ func DecryptKey(client kmsiface.KMSAPI, keyId string, encrypted string) ([]byte,
 		KeyId:               aws.String(keyId),
 		EncryptionAlgorithm: aws.String("RSAES_OAEP_SHA_256"),
 	})
+
 	if err != nil {
-		return []byte(nil), err
+		return nil, err
 	}
 
 	return result.Plaintext, nil
