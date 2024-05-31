@@ -6,11 +6,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/aws/aws-sdk-go/service/kms/kmsiface"
 )
 
-func GetPublicKey(client *kms.KMS, keyID string) ([]byte, error) {
+func GetPublicKey(client kmsiface.KMSAPI, keyID string) ([]byte, error) {
 	// Gets the PublicKey from an Asymmetric key
-
 	output, err := client.GetPublicKey(&kms.GetPublicKeyInput{
 		KeyId: aws.String(keyID),
 	})
@@ -19,7 +19,6 @@ func GetPublicKey(client *kms.KMS, keyID string) ([]byte, error) {
 		return nil, err
 	}
 
-	// fmt.Println(output)
 	// output is GetPublicKeyOutput
 	// Get the public key as byte array
 	return output.PublicKey, nil
@@ -47,10 +46,10 @@ func EncryptKey(client *kms.KMS, keyId string, source []byte, target string) err
 	return nil
 }
 
-func DecryptKey(client *kms.KMS, keyId string, encrypted string, target string) error {
+func DecryptKey(client *kms.KMS, keyId string, encrypted string) ([]byte, error) {
 	encFile, err := os.ReadFile(encrypted)
 	if err != nil {
-		return err
+		return []byte(nil), err
 	}
 
 	result, err := client.Decrypt(&kms.DecryptInput{
@@ -59,13 +58,8 @@ func DecryptKey(client *kms.KMS, keyId string, encrypted string, target string) 
 		EncryptionAlgorithm: aws.String("RSAES_OAEP_SHA_256"),
 	})
 	if err != nil {
-		return err
+		return []byte(nil), err
 	}
 
-	err = os.WriteFile(target, result.Plaintext, 0664)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return result.Plaintext, nil
 }

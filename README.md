@@ -4,7 +4,16 @@
 
 Example of building a hybrid offline encryption system based on [AWS Article here].
 
-The idea is to create a hybrid system that uses AES to encrypt data locally and using the RSA KMS public key to further encrypt the generated key used in the AES encryption.
+The idea is to create a hybrid system that uses AES to encrypt data locally and using the RSA KMS public key, which is downloaded locally, to further encrypt the generated key used in the AES encryption.
+
+This has the following benefits:
+
+* In the event that the KMS API is unavailable, the data can be encrypted locally using the available KMS public key
+
+* It allows larger files to be encrypted since RSA has a 190 bytes limit
+
+* It saves on costs as its not calling KMS API for encrypt operations per file
+
 
 The encryption workflow based on the article becomes:
 
@@ -22,7 +31,7 @@ The decryption process becomes:
 * Use the decrypted key to decrypt the file object
 
 
-Note that this has the ability to encrypt larger file objects since RSA has an upper limit of 190 bytes
+Note that this has the ability to encrypt larger file objects since RSA has an upper limit of 190 bytes.
 
 ### To run
 
@@ -71,8 +80,4 @@ To decrypt the encrypted file and key:
 
 ### TODOS
 
-* Make the name of generated keys to match that of source filenames
-* Remove / delete the decrypted keys after decryption
-* Add option to upload encrypted artifacts to S3
-* Add option to allow traversal via directories and perform encryption/decryption on each file found
 * Add TESTS

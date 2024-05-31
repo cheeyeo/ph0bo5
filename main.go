@@ -17,7 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/kms"
 	"github.com/zenazn/pkcs7pad"
 
-	"github.com/cheeyeo/ph0bo5/customaes"
+	"github.com/cheeyeo/ph0bo5/crypto5"
 	"github.com/cheeyeo/ph0bo5/customkms"
 )
 
@@ -48,15 +48,12 @@ func main() {
 
 	if err != nil {
 		log.Fatalf(err.Error())
-		os.Exit(1)
 	}
 
 	// Specify ARN or ALIAS of KMS KEY
 	keyId := os.Getenv("KEY_ID")
-	// fmt.Println(keyId)
 	if len(keyId) == 0 {
 		log.Fatalf("Key ID cannot be blank! Check your .env file")
-		os.Exit(1)
 	}
 
 	svc := kms.New(sess)
@@ -83,11 +80,14 @@ func main() {
 		fmt.Println("subcommand 'encrypt'")
 		fmt.Println(" source:", *encryptSource)
 		fmt.Println(" target:", *encryptTarget)
-		fmt.Println(" DER path:", *derPath)
+		fmt.Println(" public key (DER) path:", *derPath)
 
+		if *derPath == "" {
+			log.Fatalf("Public key cannot be blank. Please run download-cert.")
+		}
 		orig, err := os.ReadFile(*encryptSource)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatalf(err.Error())
 		}
 
 		// Convert to base64 encoding so it works for both text and images?
@@ -97,15 +97,15 @@ func main() {
 		data := pkcs7pad.Pad([]byte(plainText), 16)
 
 		if len(data)%aes.BlockSize != 0 {
-			panic("Plaintext is not a multiple of the block size")
+			log.Fatalf("Plaintext is not a multiple of the block size")
 		}
 
 		// Generate Random AES 32 byte / 256 bit symmetric key for local encryption
-		keyText := customaes.GenerateRandomString(32)
+		keyText := crypto5.GenerateRandomString(32)
 		keyByte := []byte(keyText)
 
 		// Encrypt file using random key
-		cipherText := customaes.Encrypt(keyByte, string(data))
+		cipherText := crypto5.EncryptWithAES(keyByte, string(data))
 
 		// Save encrypted file
 		err = os.WriteFile(*encryptTarget, []byte(cipherText), 0664)
@@ -113,12 +113,16 @@ func main() {
 			log.Fatalf(err.Error())
 		}
 
-		publicKey, err := customaes.ConvertDERToRSA(*derPath)
+		derData, err := os.ReadFile(*derPath)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+		publicKey, err := crypto5.ConvertDERToRSA(derData)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
 
-		ciphertext, err := customaes.EncryptWithRSA(publicKey, keyByte, nil)
+		ciphertext, err := crypto5.EncryptWithRSA(publicKey, keyByte, nil)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
@@ -152,13 +156,7 @@ func main() {
 		newPath2 := strings.Join(newPath, ".")
 		target_key_path := filepath.Join(dir, newPath2)
 
-		err = customkms.DecryptKey(svc, keyId, target_key_path, "decrypted_key.b64")
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
-		// Decrypt the encrypted file
-		keyByte, err := os.ReadFile("decrypted_key.b64")
+		keyByte, err := customkms.DecryptKey(svc, keyId, target_key_path)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -168,7 +166,7 @@ func main() {
 			log.Fatalf(err.Error())
 		}
 
-		plain, err := customaes.Decrypt(keyByte, string(cipherText))
+		plain, err := crypto5.DecryptWithAES(keyByte, string(cipherText))
 		if err != nil {
 			log.Fatalf(err.Error())
 		}

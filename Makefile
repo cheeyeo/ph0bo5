@@ -11,5 +11,8 @@ vet: fmt
 build: vet
 	go build -o build/phobos
 
+test:
+  go test ./...
+
 clean:
 	go clean
