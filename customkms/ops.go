@@ -24,7 +24,7 @@ func GetPublicKey(client kmsiface.KMSAPI, keyID string) ([]byte, error) {
 	return output.PublicKey, nil
 }
 
-func EncryptKey(client *kms.KMS, keyId string, source []byte, target string) error {
+func EncryptKey(client kmsiface.KMSAPI, keyId string, source []byte, target string) error {
 	// Encrypt the data
 	result, err := client.Encrypt(&kms.EncryptInput{
 		KeyId:               aws.String(keyId),
@@ -46,7 +46,7 @@ func EncryptKey(client *kms.KMS, keyId string, source []byte, target string) err
 	return nil
 }
 
-func DecryptKey(client *kms.KMS, keyId string, encrypted string) ([]byte, error) {
+func DecryptKey(client kmsiface.KMSAPI, keyId string, encrypted string) ([]byte, error) {
 	encFile, err := os.ReadFile(encrypted)
 	if err != nil {
 		return []byte(nil), err
