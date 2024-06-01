@@ -12,9 +12,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/zenazn/pkcs7pad"
 
 	"github.com/cheeyeo/ph0bo5/crypto5"
@@ -39,12 +40,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Profile: os.Getenv("AWS_PROFILE"),
-		Config: aws.Config{
-			Region: aws.String(os.Getenv("AWS_REGION")),
-		},
-	})
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithSharedConfigProfile(os.Getenv("AWS_PROFILE")),
+		config.WithRegion(os.Getenv("AWS_REGION")),
+	)
 
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -56,7 +56,7 @@ func main() {
 		log.Fatalf("Key ID cannot be blank! Check your .env file")
 	}
 
-	svc := kms.New(sess)
+	svc := kms.NewFromConfig(cfg)
 
 	switch os.Args[1] {
 	case "download-cert":
@@ -64,7 +64,7 @@ func main() {
 		fmt.Println("subcommand 'download-cert'")
 		fmt.Println(" path:", *certLocation)
 
-		publicKey, err := customkms.GetPublicKey(svc, keyId)
+		publicKey, err := customkms.GetPublicKey(context.TODO(), svc, keyId)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
@@ -156,7 +156,7 @@ func main() {
 		newPath2 := strings.Join(newPath, ".")
 		target_key_path := filepath.Join(dir, newPath2)
 
-		keyByte, err := customkms.DecryptKey(svc, keyId, target_key_path)
+		keyByte, err := customkms.DecryptKey(context.TODO(), svc, keyId, target_key_path)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
