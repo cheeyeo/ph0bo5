@@ -158,7 +158,7 @@ func main() {
 
 		keyByte, err := customkms.DecryptKey(svc, keyId, target_key_path)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatalf(err.Error())
 		}
 
 		cipherText, err := os.ReadFile(*decryptSource)
