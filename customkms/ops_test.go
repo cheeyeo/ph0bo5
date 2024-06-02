@@ -139,8 +139,9 @@ func TestReEncryptKey(t *testing.T) {
 		raiseErr: nil,
 	}
 
-	err := ReEncryptKey(context.TODO(), mockSvc, []byte("data"), "alias/SOURCE", "alias/TARGET", "key.enc")
+	err := ReEncryptKey(context.TODO(), mockSvc, []byte("data"), "alias/SOURCE", "alias/TARGET", "/tmp/key.enc")
 	assert.Nil(t, err)
+	os.Remove("/tmp/key.enc")
 }
 
 func TestReEncryptKeyError(t *testing.T) {
@@ -148,7 +149,8 @@ func TestReEncryptKeyError(t *testing.T) {
 		raiseErr: errors.New("key not found"),
 	}
 
-	err := ReEncryptKey(context.TODO(), mockSvc, []byte("data"), "alias/SOURCE", "alias/TARGET", "key.enc")
+	err := ReEncryptKey(context.TODO(), mockSvc, []byte("data"), "alias/SOURCE", "alias/TARGET", "/tmp/key.enc")
 	assert.NotNil(t, err)
 	assert.Equal(t, err.Error(), "key not found")
+	os.Remove("/tmp/key.enc")
 }

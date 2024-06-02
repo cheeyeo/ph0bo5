@@ -24,7 +24,8 @@ import (
 
 func main() {
 	getCertificateCmd := flag.NewFlagSet("download-cert", flag.ExitOnError)
-	certLocation := getCertificateCmd.String("path", "", "path")
+	certLocation := getCertificateCmd.String("path", "", "Path to save the public cert")
+	certKeyId := getCertificateCmd.String("alias", "", "KMS Key Alias to get public key from")
 
 	encryptCmd := flag.NewFlagSet("encrypt", flag.ExitOnError)
 	encryptSource := encryptCmd.String("source", "", "Source of file to encrypt. --source <PATH TO FILE>")
@@ -32,8 +33,9 @@ func main() {
 	derPath := encryptCmd.String("cert-der", "", "--cert <PATH TO PUBLIC DER CERT>")
 
 	decryptCmd := flag.NewFlagSet("decrypt", flag.ExitOnError)
-	decryptSource := decryptCmd.String("source", "", "source")
-	decryptTarget := decryptCmd.String("target", "", "target")
+	decryptSource := decryptCmd.String("source", "", "Source file to decrypt")
+	decryptTarget := decryptCmd.String("target", "", "Path to save decrypted file")
+	decryptKeyId := decryptCmd.String("alias", "", "KMS Key Alias to use")
 
 	reEncryptCmd := flag.NewFlagSet("reencrypt", flag.ExitOnError)
 	sourceKey := reEncryptCmd.String("sourcek", "", "Source key ID")
@@ -53,12 +55,6 @@ func main() {
 
 	if err != nil {
 		log.Fatalf(err.Error())
-	}
-
-	// Specify ARN or ALIAS of KMS KEY
-	keyId := os.Getenv("KEY_ID")
-	if len(keyId) == 0 {
-		log.Fatalf("Key ID cannot be blank! Check your .env file")
 	}
 
 	svc := kms.NewFromConfig(cfg)
@@ -85,8 +81,9 @@ func main() {
 		getCertificateCmd.Parse(os.Args[2:])
 		fmt.Println("subcommand 'download-cert'")
 		fmt.Println(" path:", *certLocation)
+		fmt.Println(" KMS Alias:", *certKeyId)
 
-		publicKey, err := customkms.GetPublicKey(context.TODO(), svc, keyId)
+		publicKey, err := customkms.GetPublicKey(context.TODO(), svc, *certKeyId)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
@@ -167,6 +164,7 @@ func main() {
 		fmt.Println("subcommand 'decrypt'")
 		fmt.Println(" source:", *decryptSource)
 		fmt.Println(" target:", *decryptTarget)
+		fmt.Println(" KMS Alias:", *decryptKeyId)
 
 		// Decrypt the encrypted private key using KMS decrypt
 		// Encrypted file of path <orig file nam>.key
@@ -179,9 +177,8 @@ func main() {
 		newPath2 := strings.Join(newPath, ".")
 		target_key_path := filepath.Join(dir, newPath2)
 
-		keyByte, err := customkms.DecryptKey(context.TODO(), svc, keyId, target_key_path)
+		keyByte, err := customkms.DecryptKey(context.TODO(), svc, *decryptKeyId, target_key_path)
 		if err != nil {
-			fmt.Println(err)
 			log.Fatalf(err.Error())
 		}
 
