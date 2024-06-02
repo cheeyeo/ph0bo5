@@ -47,6 +47,17 @@ func (m *mockKMSClient) Decrypt(ctx context.Context, params *kms.DecryptInput, o
 	return output, nil
 }
 
+func (m *mockKMSClient) ReEncrypt(ctx context.Context, params *kms.ReEncryptInput, optFns ...func(*kms.Options)) (*kms.ReEncryptOutput, error) {
+	if m.raiseErr != nil {
+		return nil, m.raiseErr
+	}
+
+	output := &kms.ReEncryptOutput{
+		CiphertextBlob: []byte("ciphertext"),
+	}
+	return output, nil
+}
+
 func TestGetPublicKeyNotFound(t *testing.T) {
 	mockSvc := &mockKMSClient{
 		raiseErr: errors.New("key not found"),
@@ -120,5 +131,24 @@ func TestDecryptKeyFileKMSError(t *testing.T) {
 	os.WriteFile("/tmp/key.enc", []byte("some content"), 0644)
 	res, err := DecryptKey(context.TODO(), mockSvc, "keyid", "/tmp/key.enc")
 	assert.Nil(t, res)
-	assert.Equal(t, err, errors.New("key not found"))
+	assert.Equal(t, err.Error(), "key not found")
+}
+
+func TestReEncryptKey(t *testing.T) {
+	mockSvc := &mockKMSClient{
+		raiseErr: nil,
+	}
+
+	err := ReEncryptKey(context.TODO(), mockSvc, []byte("data"), "alias/SOURCE", "alias/TARGET", "key.enc")
+	assert.Nil(t, err)
+}
+
+func TestReEncryptKeyError(t *testing.T) {
+	mockSvc := &mockKMSClient{
+		raiseErr: errors.New("key not found"),
+	}
+
+	err := ReEncryptKey(context.TODO(), mockSvc, []byte("data"), "alias/SOURCE", "alias/TARGET", "key.enc")
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "key not found")
 }

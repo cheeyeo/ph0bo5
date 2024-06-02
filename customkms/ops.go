@@ -9,19 +9,37 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 )
 
-type KMSGetPublicKeyAPI interface {
+type KMSApi interface {
 	GetPublicKey(ctx context.Context, params *kms.GetPublicKeyInput, optFns ...func(*kms.Options)) (*kms.GetPublicKeyOutput, error)
-}
 
-type KMSEncryptAPI interface {
 	Encrypt(ctx context.Context, params *kms.EncryptInput, optFns ...func(*kms.Options)) (*kms.EncryptOutput, error)
-}
 
-type KMSDecryptAPI interface {
 	Decrypt(ctx context.Context, params *kms.DecryptInput, optFns ...func(*kms.Options)) (*kms.DecryptOutput, error)
+
+	ReEncrypt(ctx context.Context, params *kms.ReEncryptInput, optFns ...func(*kms.Options)) (*kms.ReEncryptOutput, error)
 }
 
-func GetPublicKey(ctx context.Context, api KMSGetPublicKeyAPI, keyID string) ([]byte, error) {
+func ReEncryptKey(ctx context.Context, api KMSApi, data []byte, sourceKeyAlias string, destKeyAlias string, target string) error {
+	result, err := api.ReEncrypt(ctx, &kms.ReEncryptInput{
+		CiphertextBlob:                 data,
+		DestinationKeyId:               aws.String(destKeyAlias),
+		SourceKeyId:                    aws.String(sourceKeyAlias),
+		DestinationEncryptionAlgorithm: types.EncryptionAlgorithmSpecRsaesOaepSha256,
+		SourceEncryptionAlgorithm:      types.EncryptionAlgorithmSpecRsaesOaepSha256,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(target, result.CiphertextBlob, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetPublicKey(ctx context.Context, api KMSApi, keyID string) ([]byte, error) {
 	// Gets the PublicKey from an Asymmetric key
 	output, err := api.GetPublicKey(ctx, &kms.GetPublicKeyInput{
 		KeyId: aws.String(keyID),
@@ -36,7 +54,7 @@ func GetPublicKey(ctx context.Context, api KMSGetPublicKeyAPI, keyID string) ([]
 	return output.PublicKey, nil
 }
 
-func EncryptKey(ctx context.Context, api KMSEncryptAPI, keyId string, source []byte, target string) error {
+func EncryptKey(ctx context.Context, api KMSApi, keyId string, source []byte, target string) error {
 	// Encrypt the data
 	result, err := api.Encrypt(ctx, &kms.EncryptInput{
 		KeyId:               aws.String(keyId),
@@ -56,7 +74,7 @@ func EncryptKey(ctx context.Context, api KMSEncryptAPI, keyId string, source []b
 	return nil
 }
 
-func DecryptKey(ctx context.Context, api KMSDecryptAPI, keyId string, encrypted string) ([]byte, error) {
+func DecryptKey(ctx context.Context, api KMSApi, keyId string, encrypted string) ([]byte, error) {
 	encFile, err := os.ReadFile(encrypted)
 	if err != nil {
 		return nil, err

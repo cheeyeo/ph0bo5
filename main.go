@@ -35,8 +35,13 @@ func main() {
 	decryptSource := decryptCmd.String("source", "", "source")
 	decryptTarget := decryptCmd.String("target", "", "target")
 
+	reEncryptCmd := flag.NewFlagSet("reencrypt", flag.ExitOnError)
+	sourceKey := reEncryptCmd.String("sourcek", "", "Source key ID")
+	destKey := reEncryptCmd.String("destk", "", "New dest key ID")
+	reEncryptSource := reEncryptCmd.String("source", "", "Encrypted file to reencrypt")
+
 	if len(os.Args) < 2 {
-		fmt.Println("expected 'download-cert', 'encrypt' or 'decrypt' subcommands")
+		fmt.Println("expected 'download-cert', 'encrypt', 'decrypt' or 'reencrypt' subcommands")
 		os.Exit(1)
 	}
 
@@ -59,6 +64,23 @@ func main() {
 	svc := kms.NewFromConfig(cfg)
 
 	switch os.Args[1] {
+	case "reencrypt":
+		reEncryptCmd.Parse(os.Args[2:])
+		fmt.Println("subcommand 'reencrypt'")
+		fmt.Println(" sourcek:", *sourceKey)
+		fmt.Println(" destk:", *destKey)
+		fmt.Println(" reencrypt source:", *reEncryptSource)
+
+		enc, err := os.ReadFile(*reEncryptSource)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		err = customkms.ReEncryptKey(context.TODO(), svc, enc, *sourceKey, *destKey, *reEncryptSource)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
 	case "download-cert":
 		getCertificateCmd.Parse(os.Args[2:])
 		fmt.Println("subcommand 'download-cert'")
@@ -147,6 +169,7 @@ func main() {
 		fmt.Println(" target:", *decryptTarget)
 
 		// Decrypt the encrypted private key using KMS decrypt
+		// Encrypted file of path <orig file nam>.key
 		dir := filepath.Dir(*decryptSource)
 		base := filepath.Base(*decryptSource)
 		ext := filepath.Ext(base)
@@ -158,6 +181,7 @@ func main() {
 
 		keyByte, err := customkms.DecryptKey(context.TODO(), svc, keyId, target_key_path)
 		if err != nil {
+			fmt.Println(err)
 			log.Fatalf(err.Error())
 		}
 
