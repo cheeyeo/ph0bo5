@@ -54,28 +54,45 @@ cp .env.example .env
 source .env
 ```
 
+### To Run
+
+Assuming we have a single file of `test.txt`, the commands below will generated an encrypted file of `test.txt.enc` and a private AES key `test.txt.key` used to encrypt the file. This key is encrypted using the public key of the KMS RSA key.
+
+
 We need to download the Public Key from KMS using the following command:
 ```
-./build/phobos download-cert --path ./certs/public_key.der
+./build/phobos download-cert \ 
+  --alias <KMS KEY ALIAS> \
+  --path ./certs/public_key.der
 ```
 
-The public key will be returned as a DER-encoded X.509 public key, also known as SubjectPublicKeyInfo (SPKI)
+The public key will be returned as a DER-encoded X.509 public key, also known as SubjectPublicKeyInfo (SPKI). The application will parse and return the appropriate RSA public key from it.
 
-We pass the saved public key during encryption to encrypt the random key:
+We pass the saved public key from above ^ during encryption to encrypt `test.txt.key`:
 ```
 ./build/phobos encrypt \
   --cert-der ./certs/public_key.der \
-  --source <FILE> \
-  --target <FILE>
+  --source test.txt \
+  --target test.txt.enc
 ```
 
 To decrypt the encrypted file and key:
 ```
 ./build/phobos decrypt \
-  --source <ENCRYPTED FILE> \
-  --target <DECRYPTED FILE>
+  --source test.txt.enc \
+  --target test.txt \
+  --alias <KMS KEY ALIAS>
 ```
 
+To re-encrypt the key material, we can run the following:
+```
+./build/phobos reencrypt \
+  --sourcek <KMS SOURCE KEY ALIAS> \
+  --destk <NEW KEY ALIAS> \
+  --source test.txt.enc
+```
+
+Re-encrypt is only used during key rotation. It uses the public key of a new RSA KMS keypair to re-encrypt the encrypted key ( test.txt.enc ). There is no need to re-encrypt the `test.txt` or source files again as only the encrypted key has changed. Using the right key alias during decrypt will use the right private key to decrypt the key.
 
 
 ### TODOS

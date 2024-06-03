@@ -16,3 +16,11 @@ clean:
 
 test:
 	go test -v ./...
+
+lint:
+	go install honnef.co/go/tools/cmd/staticcheck@latest
+	staticcheck ./...
+
+vulncheck:
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	govulncheck ./...

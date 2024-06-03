@@ -25,5 +25,8 @@ go.work.sum
 *.enc
 *.b64
 *.orig
+*.key
+*.orig*
 build/
 certs/
+MISC*

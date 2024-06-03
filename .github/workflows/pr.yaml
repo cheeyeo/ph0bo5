@@ -1,0 +1,53 @@
+name: 'Go Lang PR pipeline'
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.22.x' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install dependencies
+        run: go get .
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Test with Go
+        run: go test -v ./... -json > TestResults-${{ matrix.go-version }}.json
+      
+      # - uses: dominikh/staticcheck-action@v1.2.0
+      #   with:
+      #     version: "latest"
+      #     install-go: false
+      #     cache-key: ${{ matrix.go-version }}
+      
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1.0.1
+        with:
+           go-version-input: ${{ matrix.go-version }}
+           go-package: ./...
+
+
+      - name: Upload Go test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Go-results-${{ matrix.go-version }}
+          path: TestResults-${{ matrix.go-version }}.json
